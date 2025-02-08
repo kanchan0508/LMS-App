@@ -58,3 +58,17 @@ export const onBoardingSlides: onBoardingSlidesTypes[] = [
       "Achieve certification by completing courses with dedicated effort",
   },
 ];
+
+// onboarding variables
+export enum Side {
+  LEFT,
+  RIGHT,
+  NONE,
+}
+export const MIN_LEDGE = 25;
+export const { width: WIDTH, height: HEIGHT } = Dimensions.get("screen");
+export const MARGIN_WIDTH = MIN_LEDGE + 50;
+export const PREV = WIDTH;
+export const NEXT = 0;
+export const LEFT_SNAP_POINTS = [MARGIN_WIDTH, PREV];
+export const RIGHT_SNAP_POINTS = [NEXT, WIDTH - MARGIN_WIDTH];
