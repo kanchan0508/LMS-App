@@ -83,11 +83,11 @@ const Wave = ({ side, children, position, isTransitioning }: WaveProps) => {
       ]}
     >
       <AnimatedPath
-        fill={
-          Platform.OS === "android"
-            ? children.props.slide.color
-            : children.props.color
-        }
+       fill={
+        Platform.OS === "android"
+          ? children?.props?.slide?.color ?? "black" // Use a default color
+          : children?.props?.color ?? "black"
+      }
         animatedProps={animatedProps}
       />
     </Svg>
