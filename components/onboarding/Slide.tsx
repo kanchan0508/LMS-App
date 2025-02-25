@@ -6,6 +6,7 @@ import {
   Pressable,
   Platform,
   Modal,
+  Alert, // Add this for debugging
 } from "react-native";
 import React, { useState } from "react";
 import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
@@ -18,7 +19,7 @@ import {
   windowWidth,
 } from "@/themes/app.constant";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
+import AuthModal from "../auth/auth.modal";
 
 export default function Slide({
   slide,
@@ -33,16 +34,18 @@ export default function Slide({
 }) {
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handlePress = (index: number, setIndex: (index: number) => void) => {
-    if (index === 2) {
+  const handlePress = () => {
+    if (index === totalSlides - 1) {
+      console.log('Last slide, opening modal');
       setModalVisible(true);
     } else {
+      console.log('Moving to next slide');
       setIndex(index + 1);
     }
   };
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <Svg style={StyleSheet.absoluteFill}>
         <Defs>
           <RadialGradient id="gradient" cx="50%" cy="35%">
@@ -108,39 +111,40 @@ export default function Slide({
           />
         ))}
       </View>
-      {/* Next Button */}
-      {index <= totalSlides - 1 && (
-        <LinearGradient
-          colors={["#6D55FE", "#8976FC"]}
-          style={styles.nextButton}
+      <LinearGradient
+        colors={["#6D55FE", "#8976FC"]}
+        style={styles.nextButton}
+      >
+        <Pressable
+          style={styles.buttonContent}
+          onPress={handlePress}
         >
-          <Pressable
-            style={{
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-              height: "100%",
-            }}
-            onPress={() => handlePress(index, setIndex)}
-          >
-            <Text style={styles.nextButtonText}>Next</Text>
-          </Pressable>
-        </LinearGradient>
-      )}
-      {index < totalSlides - 1 && (
-        <TouchableOpacity
-          style={styles.arrowButton}
-          onPress={() => handlePress(index, setIndex)}
-        >
-          <Ionicons
-            name="chevron-forward-outline"
-            size={scale(18)}
-            color="black"
-          />
-        </TouchableOpacity>
-      )}
-    </>
+          <Text style={styles.nextButtonText}>
+            {index === totalSlides - 1 ? "Get Started" : "Next"}
+          </Text>
+        </Pressable>
+      </LinearGradient>
+
+      {/* Modal */}
+      <Modal
+  animationType="slide"
+  transparent={true}
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)}
+>
+  <Pressable 
+    style={styles.modalOverlay}
+    onPress={() => setModalVisible(false)} // Close on overlay press
+  >
+    <Pressable 
+      style={styles.modalContent}
+      onPress={(e) => e.stopPropagation()} // Prevent closing when clicking modal content
+    >
+      <AuthModal onClose={() => setModalVisible(false)} />
+    </Pressable>
+  </Pressable>
+</Modal>
+    </View>
   );
 }
 
@@ -150,6 +154,43 @@ const styles = StyleSheet.create({
     padding: scale(60),
     paddingTop: verticalScale(100),
     alignItems: "center",
+  },
+  buttonContent: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+  },
+  nextButton: {
+    position: "absolute",
+    zIndex: 999999999,
+    right: windowWidth(25),
+    bottom: windowHeight(50),
+    marginTop: windowHeight(30),
+    alignItems: "center",
+    justifyContent: "center",
+    width: windowWidth(140),
+    height: windowHeight(37),
+    borderRadius: windowWidth(20),
+  },
+  nextButtonText: {
+    color: "white",
+    fontSize: fontSizes.FONT22,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: windowWidth(420),
+    backgroundColor: 'white',
+    borderRadius: 30,
+    overflow: 'hidden',
   },
   indicatorContainer: {
     flexDirection: "row",
@@ -169,35 +210,5 @@ const styles = StyleSheet.create({
     height: verticalScale(7),
     width: scale(35),
     backgroundColor: "white",
-  },
-  nextButton: {
-    position: "absolute",
-    zIndex: 999999999,
-    right: windowWidth(25),
-    bottom: windowHeight(50),
-    marginTop: windowHeight(30),
-    alignItems: "center",
-    justifyContent: "center",
-    width: windowWidth(140),
-    height: windowHeight(37),
-    borderRadius: windowWidth(20),
-  },
-  nextButtonText: {
-    color: "white",
-    fontSize: fontSizes.FONT22,
-    fontWeight: "bold",
-  },
-  arrowButton: {
-    position: "absolute",
-    width: scale(30),
-    height: scale(30),
-    borderRadius: scale(20),
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-    right: moderateScale(5),
-    top: Platform.OS === "ios" ? verticalScale(345) : verticalScale(385),
-    transform: [{ translateY: -30 }],
   },
 });
