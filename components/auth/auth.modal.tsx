@@ -1,12 +1,27 @@
-import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Image, StyleSheet, Platform } from 'react-native';
 import React from 'react';
 import { fontSizes, windowHeight, windowWidth } from "@/themes/app.constant";
+import {GoogleSignin} from "@react-native-google-signin/google-signin";
+import {makeRedirectUri, useAuthRequest} from "expo-auth-session"
 
 interface AuthModalProps {
   onClose: () => void;
 }
 
 export default function AuthModal({ onClose }: AuthModalProps) {
+
+  const configureGoogleSignIn = ()=>{
+    if(Platform.OS === "ios" ){
+      GoogleSignin.configure({
+        iosClientId: process.env.EXPO_PUBLIC_IOS_GOOGLE_API_KEY,
+      })
+    }
+
+  }
+
+  const googleSignIn = ()=>{
+
+  }
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Join to Becodemy</Text>
@@ -14,7 +29,9 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         It's easier than your imagination!
       </Text>
       <View style={styles.socialButtons}>
-        <Pressable style={styles.socialButton}>
+        <Pressable style={styles.socialButton}
+        onPress={()=> googleSignIn()}
+        >
           <Image
             source={require("@/assets/images/onboarding/google.png")}
             style={styles.socialIcon}

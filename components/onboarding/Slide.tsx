@@ -134,11 +134,11 @@ export default function Slide({
 >
   <Pressable 
     style={styles.modalOverlay}
-    onPress={() => setModalVisible(false)} // Close on overlay press
+    onPress={() => setModalVisible(false)} 
   >
     <Pressable 
       style={styles.modalContent}
-      onPress={(e) => e.stopPropagation()} // Prevent closing when clicking modal content
+      onPress={(e) => e.stopPropagation()} 
     >
       <AuthModal onClose={() => setModalVisible(false)} />
     </Pressable>
