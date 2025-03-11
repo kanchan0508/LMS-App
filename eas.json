@@ -1,15 +1,18 @@
 {
   "cli": {
-    "version": ">= 15.0.12",
+    "version": ">= 5.9.1",
     "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": {
-        "resourceClass": "m-medium",
-        "simulator": true
+      "android": {
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk"
+      },
+      "env": {
+        "ANDROID_SDK_ROOT": "C:\\Users\\USERNAME\\AppData\\Local\\Android\\Sdk"
       }
     },
     "preview": {
