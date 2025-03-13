@@ -1,6 +1,6 @@
 {
   "cli": {
-    "version": ">= 5.9.1",
+    "version": ">= 15.0.15",
     "appVersionSource": "remote"
   },
   "build": {
@@ -9,7 +9,10 @@
       "distribution": "internal",
       "android": {
         "gradleCommand": ":app:assembleDebug",
-        "buildType": "apk"
+        "buildType": "apk",
+        "cache": {
+          "disabled": true
+        }
       },
       "env": {
         "ANDROID_SDK_ROOT": "C:\\Users\\USERNAME\\AppData\\Local\\Android\\Sdk"

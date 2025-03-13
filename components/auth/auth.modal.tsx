@@ -7,80 +7,82 @@ import {
   Pressable,
   Image,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { fontSizes, windowHeight, windowWidth } from "@/themes/app.constant";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface AuthModalProps {
   onClose: () => void;
 }
 
-WebBrowser.maybeCompleteAuthSession();
+interface UserInfo {
+  picture: string;
+  name: string;
+  email: string;
+}
 
 export default function AuthModal({ onClose }: AuthModalProps) {
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId:
-      "1098728948199-4gevdb7m5jkantvnk1dipu1h0fd4or44.apps.googleusercontent.com",
-    iosClientId:
-      "1098728948199-rme79mncl3mki5npag9m8uc3k4uu618d.apps.googleusercontent.com",
-    webClientId:
-      "1098728948199-nulnrlfll5mm6vsvjmr9vf69glptkkmn.apps.googleusercontent.com",
+    androidClientId: "1098728948199-4gevdb7m5jkantvnk1dipu1h0fd4or44.apps.googleusercontent.com",
+    webClientId: "1098728948199-nulnrlfll5mm6vsvjmr9vf69glptkkmn.apps.googleusercontent.com",
+    clientId: "1098728948199-nulnrlfll5mm6vsvjmr9vf69glptkkmn.apps.googleusercontent.com",
+    responseType: "id_token",
+    scopes: ['profile', 'email'],
+    extraParams: {
+      access_type: 'offline',
+      prompt: 'select_account'
+    }
   });
-
-  useEffect(() => {
-    checkStoredUser();
-  }, []);
 
   useEffect(() => {
     handleSignInResponse();
   }, [response]);
 
-  /** ✅ Check if user is already signed in */
-  const checkStoredUser = async () => {
-    try {
-      const storedUser = await AsyncStorage.getItem("userInfo");
-      if (storedUser) {
-        setUserInfo(JSON.parse(storedUser));
-      }
-    } catch (error) {
-      console.error("Error loading stored user:", error);
-    }
-  };
-
-  /** ✅ Handle Google Sign-In response */
   const handleSignInResponse = async () => {
-    if (response?.type === "success" && response.authentication) {
+    if (response?.type === "success" && response.authentication?.accessToken) {
       try {
         const userInfoResponse = await fetch(
           "https://www.googleapis.com/userinfo/v2/me",
           {
-            headers: {
-              Authorization: `Bearer ${response.authentication.accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${response.authentication.accessToken}` }
           }
         );
         const user = await userInfoResponse.json();
-        setUserInfo(user);
         await AsyncStorage.setItem("userInfo", JSON.stringify(user));
-        console.log("User info:", user);
+        setUserInfo(user);
       } catch (error) {
-        console.error("Error fetching user info:", error);
+        Alert.alert("Error", "Failed to get user info");
       }
     }
   };
 
-  /** ✅ Logout Function */
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("userInfo");
       setUserInfo(null);
-      console.log("User signed out");
     } catch (error) {
-      console.error("Logout error:", error);
+      Alert.alert("Error", "Failed to logout");
     }
   };
+
+  useEffect(() => {
+    const loadStoredUser = async () => {
+      try {
+        const user = await AsyncStorage.getItem("userInfo");
+        if (user) {
+          setUserInfo(JSON.parse(user));
+        }
+      } catch (error) {
+        console.log("Error loading stored user");
+      }
+    };
+    loadStoredUser();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -88,28 +90,24 @@ export default function AuthModal({ onClose }: AuthModalProps) {
       <Text style={styles.subtitle}>It's easier than your imagination!</Text>
 
       {userInfo ? (
-        <View style={{ alignItems: "center", marginTop: windowHeight(20) }}>
+        <View style={styles.userInfoContainer}>
           <Image
             source={{ uri: userInfo.picture }}
-            style={{ width: 60, height: 60, borderRadius: 30 }}
+            style={styles.profileImage}
           />
-          <Text style={{ fontSize: fontSizes.FONT17, fontWeight: "bold" }}>
-            {userInfo.name}
-          </Text>
-          <Text style={{ fontSize: fontSizes.FONT14 }}>{userInfo.email}</Text>
+          <Text style={styles.userName}>{userInfo.name}</Text>
+          <Text style={styles.userEmail}>{userInfo.email}</Text>
           <Pressable
-            style={styles.socialButton}
+            style={styles.logoutButton}
             onPress={handleLogout}
           >
-            <Text style={{ color: "red", fontSize: fontSizes.FONT17 }}>
-              Logout
-            </Text>
+            <Text style={styles.logoutText}>Logout</Text>
           </Pressable>
         </View>
       ) : (
         <View style={styles.socialButtons}>
           <Pressable
-            style={styles.socialButton}
+            style={[styles.socialButton, !request && styles.disabledButton]}
             onPress={() => promptAsync()}
             disabled={!request}
           >
@@ -168,4 +166,36 @@ const styles = StyleSheet.create({
     height: windowHeight(40),
     resizeMode: "contain",
   },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  userInfoContainer: {
+    alignItems: "center",
+    marginTop: windowHeight(20),
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: windowHeight(10),
+  },
+  userName: {
+    fontSize: fontSizes.FONT17,
+    fontFamily: "Poppins_700Bold",
+    color: "#000",
+  },
+  userEmail: {
+    fontSize: fontSizes.FONT14,
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+  },
+  logoutButton: {
+    marginTop: windowHeight(15),
+    padding: windowWidth(10),
+  },
+  logoutText: {
+    color: "red",
+    fontSize: fontSizes.FONT17,
+    fontFamily: "Poppins_500Medium",
+  }
 });
