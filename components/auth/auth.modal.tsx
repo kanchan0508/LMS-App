@@ -1,6 +1,4 @@
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +6,11 @@ import {
   Image,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import { fontSizes, windowHeight, windowWidth } from "@/themes/app.constant";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-WebBrowser.maybeCompleteAuthSession();
+import { useAuth } from "@clerk/clerk-expo";
+import { fontSizes, windowHeight, windowWidth } from "@/themes/app.constant";
 
 interface AuthModalProps {
   onClose: () => void;
@@ -26,63 +24,67 @@ interface UserInfo {
 
 export default function AuthModal({ onClose }: AuthModalProps) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: "1098728948199-4gevdb7m5jkantvnk1dipu1h0fd4or44.apps.googleusercontent.com",
-    webClientId: "1098728948199-nulnrlfll5mm6vsvjmr9vf69glptkkmn.apps.googleusercontent.com",
-    clientId: "1098728948199-nulnrlfll5mm6vsvjmr9vf69glptkkmn.apps.googleusercontent.com",
-    responseType: "id_token",
-    scopes: ['profile', 'email'],
-    extraParams: {
-      access_type: 'offline',
-      prompt: 'select_account'
-    }
-  });
+  const [loading, setLoading] = useState(false);
+  
+  // Get the Clerk auth session
+  const { isSignedIn, signOut } = useAuth();
 
   useEffect(() => {
-    handleSignInResponse();
-  }, [response]);
-
-  const handleSignInResponse = async () => {
-    if (response?.type === "success" && response.authentication?.accessToken) {
+    const loadStoredUser = async () => {
       try {
-        const userInfoResponse = await fetch(
-          "https://www.googleapis.com/userinfo/v2/me",
-          {
-            headers: { Authorization: `Bearer ${response.authentication.accessToken}` }
-          }
-        );
-        const user = await userInfoResponse.json();
-        await AsyncStorage.setItem("userInfo", JSON.stringify(user));
-        setUserInfo(user);
+        const storedUser = await AsyncStorage.getItem("userInfo");
+        if (storedUser) {
+          setUserInfo(JSON.parse(storedUser));
+        }
       } catch (error) {
-        Alert.alert("Error", "Failed to get user info");
+        console.log("Error loading stored user:", error);
       }
+    };
+    loadStoredUser();
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      
+      // For now, let's just simulate a successful sign-in
+      // until we can fix the OAuth flow
+      const mockUserInfo = {
+        picture: "https://randomuser.me/api/portraits/men/1.jpg",
+        name: "John Doe",
+        email: "john.doe@example.com",
+      };
+      
+      // Store the user info
+      await AsyncStorage.setItem("userInfo", JSON.stringify(mockUserInfo));
+      setUserInfo(mockUserInfo);
+      
+      Alert.alert("Success", "Signed in successfully (simulated)");
+      
+    } catch (err) {
+      console.error("Sign in error", err);
+      Alert.alert("Error", "Failed to sign in");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLogout = async () => {
     try {
+      // First sign out from Clerk if signed in
+      if (isSignedIn) {
+        await signOut();
+      }
+      
+      // Then clear local storage
       await AsyncStorage.removeItem("userInfo");
       setUserInfo(null);
+      console.log("Logged out successfully");
     } catch (error) {
+      console.error("Logout error:", error);
       Alert.alert("Error", "Failed to logout");
     }
   };
-
-  useEffect(() => {
-    const loadStoredUser = async () => {
-      try {
-        const user = await AsyncStorage.getItem("userInfo");
-        if (user) {
-          setUserInfo(JSON.parse(user));
-        }
-      } catch (error) {
-        console.log("Error loading stored user");
-      }
-    };
-    loadStoredUser();
-  }, []);
 
   return (
     <View style={styles.container}>
@@ -91,31 +93,30 @@ export default function AuthModal({ onClose }: AuthModalProps) {
 
       {userInfo ? (
         <View style={styles.userInfoContainer}>
-          <Image
-            source={{ uri: userInfo.picture }}
-            style={styles.profileImage}
-          />
+          <Image source={{ uri: userInfo.picture }} style={styles.profileImage} />
           <Text style={styles.userName}>{userInfo.name}</Text>
           <Text style={styles.userEmail}>{userInfo.email}</Text>
-          <Pressable
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>Logout</Text>
           </Pressable>
         </View>
       ) : (
         <View style={styles.socialButtons}>
           <Pressable
-            style={[styles.socialButton, !request && styles.disabledButton]}
-            onPress={() => promptAsync()}
-            disabled={!request}
+            style={[styles.socialButton, loading && styles.disabledButton]}
+            onPress={handleGoogleSignIn}
+            disabled={loading}
           >
-            <Image
-              source={require("@/assets/images/onboarding/google.png")}
-              style={styles.socialIcon}
-            />
+            {loading ? (
+              <ActivityIndicator color="#4285F4" size="small" />
+            ) : (
+              <Image
+                source={require("@/assets/images/onboarding/google.png")}
+                style={styles.socialIcon}
+              />
+            )}
           </Pressable>
+          {/* Other social login buttons */}
           <Pressable style={styles.socialButton}>
             <Image
               source={require("@/assets/images/onboarding/github.png")}
@@ -161,13 +162,13 @@ const styles = StyleSheet.create({
   socialButton: {
     padding: windowWidth(10),
   },
+  disabledButton: {
+    opacity: 0.7,
+  },
   socialIcon: {
     width: windowWidth(40),
     height: windowHeight(40),
     resizeMode: "contain",
-  },
-  disabledButton: {
-    opacity: 0.6,
   },
   userInfoContainer: {
     alignItems: "center",

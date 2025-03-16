@@ -3,6 +3,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
+import { ClerkProvider } from '@clerk/clerk-expo';
+import Constants from 'expo-constants';
 
 import 'react-native-reanimated';
 import {
@@ -17,6 +19,26 @@ import {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+// Token cache implementation (without requiring expo-secure-store)
+const tokenCache = {
+  async getToken(key: string) {
+    try {
+      // You can implement this using AsyncStorage instead
+      return null;
+    } catch (err) {
+      return null;
+    }
+  },
+  async saveToken(key: string, value: string) {
+    try {
+      // You can implement this using AsyncStorage instead
+      return;
+    } catch (err) {
+      return;
+    }
+  },
+};
+
 export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -26,6 +48,12 @@ export default function RootLayout() {
     Poppins_400Regular,
     Poppins_500Medium,
   });
+
+  const publishableKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  if (!publishableKey) {
+    throw new Error('Add EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env');
+  }
 
   useEffect(() => {
     if (loaded) {
@@ -38,12 +66,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-      </ThemeProvider>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <ThemeProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        </ThemeProvider>
+      </ClerkProvider>
     </GestureHandlerRootView>
   );
 }
